@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Mic, MicOff, Volume2, VolumeX, Languages, Loader2 } from "lucide-react"
-import { SpeechRecognition } from "web-speech-api"
 
 interface VoiceChatProps {
   onVoiceMessage: (message: string, language: string) => void
@@ -13,6 +12,57 @@ interface VoiceChatProps {
   currentLanguage?: string
 }
 
+// Declare global SpeechRecognition interface
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition
+    webkitSpeechRecognition: typeof SpeechRecognition
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start(): void
+  stop(): void
+  onresult: (event: SpeechRecognitionEvent) => void
+  onerror: (event: SpeechRecognitionErrorEvent) => void
+  onend: () => void
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionResultList {
+  length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionResult {
+  length: number
+  item(index: number): SpeechRecognitionAlternative
+  [index: number]: SpeechRecognitionAlternative
+  isFinal: boolean
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string
+  message: string
+}
+
+declare var SpeechRecognition: {
+  prototype: SpeechRecognition
+  new (): SpeechRecognition
+}
 export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage = "en" }: VoiceChatProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -20,11 +70,11 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
   const [transcript, setTranscript] = useState("")
   const [selectedLanguage, setSelectedLanguage] = useState(currentLanguage)
   const [audioLevel, setAudioLevel] = useState(0)
+  const [isSupported, setIsSupported] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<SpeechRecognition | null>(null)
-  const synthRef = useRef<SpeechSynthesis | null>(null)
 
   const supportedLanguages = [
     { code: "en-IN", name: "English (India)", nativeName: "English" },
@@ -41,8 +91,15 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
 
   useEffect(() => {
     // Initialize Speech Recognition
-    if (typeof window !== "undefined" && SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition()
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
+      
+      if (SpeechRecognitionAPI) {
+        setIsSupported(true)
+        recognitionRef.current = new SpeechRecognitionAPI()
+      } else {
+        setIsSupported(false)
+      }
 
       if (recognitionRef.current) {
         recognitionRef.current.continuous = true
@@ -81,11 +138,6 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
       }
     }
 
-    // Initialize Speech Synthesis
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      synthRef.current = window.speechSynthesis
-    }
-
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop()
@@ -95,6 +147,11 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
 
   const startRecording = async () => {
     try {
+      if (!isSupported) {
+        alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.")
+        return
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
       // Audio level monitoring
@@ -135,9 +192,9 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
   }
 
   const speakText = (text: string) => {
-    if (synthRef.current && text) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window && text) {
       // Cancel any ongoing speech
-      synthRef.current.cancel()
+      window.speechSynthesis.cancel()
 
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = selectedLanguage
@@ -145,7 +202,7 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
       utterance.pitch = 1.0
 
       // Find appropriate voice for the language
-      const voices = synthRef.current.getVoices()
+      const voices = window.speechSynthesis.getVoices()
       const voice = voices.find((v) => v.lang.startsWith(selectedLanguage.split("-")[0])) || voices[0]
       if (voice) {
         utterance.voice = voice
@@ -155,13 +212,13 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
       utterance.onend = () => setIsSpeaking(false)
       utterance.onerror = () => setIsSpeaking(false)
 
-      synthRef.current.speak(utterance)
+      window.speechSynthesis.speak(utterance)
     }
   }
 
   const stopSpeaking = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel()
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel()
       setIsSpeaking(false)
     }
   }
@@ -169,6 +226,15 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
   return (
     <Card className="vayu-card border-0">
       <CardContent className="p-4 space-y-4">
+        {/* Browser Support Check */}
+        {!isSupported && (
+          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              Voice features require Chrome or Edge browser for optimal experience.
+            </p>
+          </div>
+        )}
+
         {/* Language Selection */}
         <div className="flex items-center gap-2 flex-wrap">
           <Languages className="w-4 h-4 text-muted-foreground" />
@@ -195,7 +261,7 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
               variant={isRecording ? "destructive" : "default"}
               className={`w-16 h-16 rounded-full ${isRecording ? "animate-pulse" : ""}`}
               onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing}
+              disabled={isProcessing || !isSupported}
             >
               {isProcessing ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
@@ -220,7 +286,7 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
             size="lg"
             variant={isSpeaking ? "secondary" : "outline"}
             className="w-16 h-16 rounded-full"
-            onClick={isSpeaking ? stopSpeaking : () => speakText("नमस्ते! मैं MANA हूं, आपका मानसिक स्वास्थ्य साथी।")}
+            onClick={isSpeaking ? stopSpeaking : () => speakText("नमस्ते! मैं MANA हूं, आपका AI-powered मानसिक स्वास्थ्य साथी।")}
           >
             {isSpeaking ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
           </Button>
@@ -253,7 +319,7 @@ export function VoiceChat({ onVoiceMessage, isListening = false, currentLanguage
         {/* Voice Features Info */}
         <div className="bg-primary/5 p-3 rounded-lg">
           <p className="text-xs text-primary">
-            🎤 Voice Features: Speak in your preferred language • Real-time transcription • Cultural context
+            🎤 AI Voice Features: Speak in your preferred language • Real-time transcription • Cultural context
             understanding • Emotional tone detection
           </p>
         </div>

@@ -20,42 +20,147 @@ interface ChatMessage {
   isVoice?: boolean
 }
 
-const manaResponses = {
-  greeting: [
-    "नमस्ते! मैं MANA हूं, आपका मानसिक स्वास्थ्य साथी। आज आपका मन कैसा है? 🙂",
-    "Hi there! I'm MANA, your culturally-intelligent mental health companion. What's on your mind today?",
-    "Hello! Great to connect with you. How are you feeling right now?",
-  ],
-  sadness: [
-    "मुझे खुशी होगी अगर आप अपनी परेशानी साझा करें। आपकी भावनाएं बिल्कुल सही हैं।",
-    "I'm so sorry to hear that you're feeling this way. Your feelings are completely valid.",
-    "It sounds like you're going through a tough time. I'm here to listen and support you.",
-  ],
-  anxiety: [
-    "चिंता होना सामान्य है, खासकर परीक्षा के समय। आइए इसे एक कदम में लेते हैं।",
-    "I understand that anxiety can be overwhelming, especially during exam season. Let's take this one step at a time.",
-    "Anxiety is tough, but you're not alone. What's been causing you the most worry lately?",
-  ],
-  stress: [
-    "तनाव सभी को प्रभावित करता है। क्या आपके परिवार का दबाव भी इसमें शामिल है?",
-    "Stress affects us all differently, especially with family expectations. What usually helps you feel more relaxed?",
-    "That sounds really challenging. Have you been able to take any breaks for yourself?",
-  ],
-  positive: [
-    "यह सुनकर बहुत खुशी हुई! आपकी सकारात्मक ऊर्जा अद्भुत है।",
-    "That's wonderful to hear! I'm so glad you're feeling good. What's been going well for you?",
-    "Your positive energy is amazing! What's been bringing you joy lately?",
-  ],
-  support: [
-    "याद रखें, कभी-कभी ठीक न होना भी ठीक है। आप बहुत बहादुर हैं।",
-    "Remember, it's okay to not be okay sometimes. You're taking a brave step by reaching out.",
-    "You're stronger than you know. Every small step forward counts.",
-  ],
-  cultural: [
-    "मैं समझ सकता हूं कि भारतीय परिवारों में अपेक्षाएं कैसी होती हैं। आपकी स्थिति कैसी है?",
-    "I understand how family expectations work in Indian culture. How are you managing the pressure?",
-    "Festival season can add extra stress with family gatherings. How are you feeling about it?",
-  ],
+// AI Response Generation System
+class MANAIntelligence {
+  private static instance: MANAIntelligence
+  private conversationHistory: ChatMessage[] = []
+  private userProfile = {
+    stressLevel: 5,
+    academicPressure: 7,
+    culturalContext: "Indian",
+    preferredLanguage: "en-IN"
+  }
+
+  static getInstance(): MANAIntelligence {
+    if (!MANAIntelligence.instance) {
+      MANAIntelligence.instance = new MANAIntelligence()
+    }
+    return MANAIntelligence.instance
+  }
+
+  analyzeEmotionalTone(message: string): "positive" | "negative" | "neutral" | "crisis" {
+    const lowerMessage = message.toLowerCase()
+    
+    // Crisis detection with expanded keywords
+    const crisisKeywords = [
+      "suicide", "kill myself", "end it all", "hurt myself", "die", "can't go on",
+      "आत्महत्या", "मरना चाहता", "जीना नहीं चाहता", "खुद को नुकसान",
+      "hopeless", "worthless", "nobody cares", "better off dead"
+    ]
+    if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return "crisis"
+    }
+
+    // Negative sentiment detection
+    const negativeKeywords = [
+      "sad", "depressed", "anxious", "worried", "stressed", "overwhelmed", 
+      "lonely", "hopeless", "frustrated", "angry", "scared", "panic",
+      "उदास", "परेशान", "चिंतित", "तनाव", "अकेला", "निराश", 
+      "परीक्षा", "फेल", "pressure", "exam", "failure"
+    ]
+    if (negativeKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return "negative"
+    }
+
+    // Positive sentiment detection
+    const positiveKeywords = [
+      "happy", "good", "great", "amazing", "wonderful", "excited", 
+      "grateful", "better", "confident", "proud", "successful",
+      "खुश", "अच्छा", "बेहतर", "खुशी", "प्रसन्न", "संतुष्ट"
+    ]
+    if (positiveKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return "positive"
+    }
+
+    return "neutral"
+  }
+
+  generateContextualResponse(userMessage: string, tone: string, language: string): string {
+    const isHindi = language.startsWith("hi")
+    const lowerMessage = userMessage.toLowerCase()
+
+    // Crisis intervention
+    if (tone === "crisis") {
+      const crisisResponses = isHindi ? [
+        "मुझे आपकी बहुत चिंता है। आप अकेले नहीं हैं। कृपया तुरंत किसी विशेषज्ञ से संपर्क करें - 1800-599-0019 (iCall) या 9152987821 (AASRA)।",
+        "आपकी जिंदगी बहुत कीमती है। यह कठिन समय गुजर जाएगा। कृपया campus counselor या emergency helpline से तुरंत बात करें।"
+      ] : [
+        "I'm really concerned about you. You're not alone in this. Please reach out immediately - Campus Emergency: 911 or Crisis Helpline: 988.",
+        "Your life has value and meaning. This difficult time will pass. Please contact a mental health professional right away."
+      ]
+      return crisisResponses[Math.floor(Math.random() * crisisResponses.length)]
+    }
+
+    // Academic stress responses
+    if (lowerMessage.includes("exam") || lowerMessage.includes("परीक्षा") || lowerMessage.includes("study")) {
+      const academicResponses = isHindi ? [
+        "परीक्षा का तनाव सामान्य है। याद रखें, एक परीक्षा आपकी पूरी जिंदगी तय नहीं करती। क्या आप अपनी study strategy के बारे में बात करना चाहेंगे?",
+        "मैं समझ सकता हूं कि academic pressure कितना overwhelming हो सकता है। आइए कुछ effective study techniques और stress management पर बात करते हैं।"
+      ] : [
+        "Exam stress is completely normal, especially in our competitive academic environment. Remember, one exam doesn't define your entire future. Would you like to discuss some study strategies?",
+        "I understand how overwhelming academic pressure can feel. Let's talk about some effective study techniques and stress management methods that work well for Indian students."
+      ]
+      return academicResponses[Math.floor(Math.random() * academicResponses.length)]
+    }
+
+    // Family pressure responses
+    if (lowerMessage.includes("family") || lowerMessage.includes("parents") || lowerMessage.includes("परिवार")) {
+      const familyResponses = isHindi ? [
+        "भारतीय परिवारों में expectations का pressure मैं समझ सकता हूं। आपकी भावनाएं बिल्कुल valid हैं। क्या आप इस बारे में और बताना चाहेंगे?",
+        "Family pressure एक common challenge है जिसका सामना कई Indian students करते हैं। आपके parents आपसे प्यार करते हैं, लेकिन कभी-कभी उनकी expectations overwhelming हो सकती हैं।"
+      ] : [
+        "I understand how intense family expectations can be in Indian culture. Your feelings are completely valid. Would you like to talk about strategies for communicating with your family?",
+        "Family pressure is something many Indian students face. Your parents love you, but sometimes their expectations can feel overwhelming. Let's explore healthy ways to manage this."
+      ]
+      return familyResponses[Math.floor(Math.random() * familyResponses.length)]
+    }
+
+    // Tone-based responses with cultural context
+    switch (tone) {
+      case "negative":
+        const negativeResponses = isHindi ? [
+          "मुझे लगता है कि आप कुछ कठिन समय से गुजर रहे हैं। यह बिल्कुल ठीक है - हर किसी के जीवन में ऐसे phases आते हैं। आप अकेले नहीं हैं।",
+          "आपकी feelings को acknowledge करना important है। जो भी आप महसूस कर रहे हैं, वह valid है। क्या आप इसके बारे में और बात करना चाहेंगे?"
+        ] : [
+          "It sounds like you're going through a tough time. That's completely okay - everyone faces difficult phases. You're not alone in this journey.",
+          "I hear that you're struggling right now. Your feelings are valid and it's important to acknowledge them. Would you like to talk more about what's bothering you?"
+        ]
+        return negativeResponses[Math.floor(Math.random() * negativeResponses.length)]
+
+      case "positive":
+        const positiveResponses = isHindi ? [
+          "यह सुनकर बहुत खुशी हुई! आपकी positive energy wonderful है। क्या कोई खास बात है जो आपको खुश कर रही है?",
+          "आपकी खुशी मुझे भी खुश कर रही है! यह attitude maintain करना और भी अच्छी चीजें लाएगा आपकी जिंदगी में।"
+        ] : [
+          "That's wonderful to hear! Your positive energy is contagious. What's been going well for you lately?",
+          "I'm so glad you're feeling good! This positive mindset will help you tackle any challenges that come your way."
+        ]
+        return positiveResponses[Math.floor(Math.random() * positiveResponses.length)]
+
+      default:
+        const neutralResponses = isHindi ? [
+          "मैं यहां आपकी बात सुनने के लिए हूं। आप जो भी share करना चाहते हैं, मैं समझने की कोशिश करूंगा।",
+          "आपका mental health important है। कोई भी बात हो, बेझिझक share करें। मैं आपका साथ दूंगा।"
+        ] : [
+          "I'm here to listen and support you. Whatever you'd like to share, I'll do my best to understand and help.",
+          "Your mental health matters. Feel free to share anything that's on your mind - I'm here for you."
+        ]
+        return neutralResponses[Math.floor(Math.random() * neutralResponses.length)]
+    }
+  }
+
+  updateUserProfile(message: string, tone: string) {
+    // Update user profile based on conversation patterns
+    if (tone === "negative") {
+      this.userProfile.stressLevel = Math.min(10, this.userProfile.stressLevel + 1)
+    } else if (tone === "positive") {
+      this.userProfile.stressLevel = Math.max(1, this.userProfile.stressLevel - 1)
+    }
+
+    if (message.toLowerCase().includes("exam") || message.toLowerCase().includes("परीक्षा")) {
+      this.userProfile.academicPressure = Math.min(10, this.userProfile.academicPressure + 1)
+    }
+  }
 }
 
 export default function ChatPage() {
@@ -65,6 +170,7 @@ export default function ChatPage() {
   const [showVoiceChat, setShowVoiceChat] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState("en-IN")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const manaAI = MANAIntelligence.getInstance()
 
   useEffect(() => {
     // Load chat history from localStorage
@@ -76,7 +182,7 @@ export default function ChatPage() {
       const greeting: ChatMessage = {
         id: "1",
         sender: "mana",
-        message: manaResponses.greeting[0],
+        message: "नमस्ते! मैं MANA हूं, आपका AI-powered मानसिक स्वास्थ्य साथी। मैं आपकी भावनाओं को समझता हूं और culturally-relevant support देता हूं। आज आपका मन कैसा है? 🙂",
         timestamp: new Date(),
         emotionalTone: "positive",
         language: "hi-IN",
@@ -97,121 +203,6 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const analyzeMessage = (message: string): "positive" | "negative" | "neutral" | "crisis" => {
-    const lowerMessage = message.toLowerCase()
-
-    // Crisis keywords (English and Hindi)
-    const crisisKeywords = [
-      "suicide",
-      "kill myself",
-      "end it all",
-      "hurt myself",
-      "die",
-      "can't go on",
-      "आत्महत्या",
-      "मरना चाहता",
-      "जीना नहीं चाहता",
-      "खुद को नुकसान",
-    ]
-    if (crisisKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      return "crisis"
-    }
-
-    // Negative keywords (English and Hindi)
-    const negativeKeywords = [
-      "sad",
-      "depressed",
-      "anxious",
-      "worried",
-      "stressed",
-      "overwhelmed",
-      "lonely",
-      "hopeless",
-      "उदास",
-      "परेशान",
-      "चिंतित",
-      "तनाव",
-      "अकेला",
-      "निराश",
-      "परीक्षा",
-      "फेल",
-    ]
-    if (negativeKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      return "negative"
-    }
-
-    // Positive keywords (English and Hindi)
-    const positiveKeywords = [
-      "happy",
-      "good",
-      "great",
-      "amazing",
-      "wonderful",
-      "excited",
-      "grateful",
-      "better",
-      "खुश",
-      "अच्छा",
-      "बेहतर",
-      "खुशी",
-      "प्रसन्न",
-      "संतुष्ट",
-    ]
-    if (positiveKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      return "positive"
-    }
-
-    return "neutral"
-  }
-
-  const generateManaResponse = (userMessage: string, tone: string, language: string): string => {
-    const lowerMessage = userMessage.toLowerCase()
-    const isHindi = language.startsWith("hi")
-
-    // Crisis response
-    if (tone === "crisis") {
-      return isHindi
-        ? "मुझे आपकी बहुत चिंता है। कृपया तुरंत किसी विशेषज्ञ से संपर्क करें। आप महत्वपूर्ण हैं।"
-        : "I'm really concerned about you. Please reach out to a mental health professional immediately. You matter."
-    }
-
-    // Cultural context responses
-    if (lowerMessage.includes("family") || lowerMessage.includes("परिवार") || lowerMessage.includes("parents")) {
-      return isHindi
-        ? "मैं समझ सकता हूं कि परिवार का दबाव कैसा होता है। आपकी भावनाएं महत्वपूर्ण हैं।"
-        : "I understand family pressure can be intense in our culture. Your feelings are valid and important."
-    }
-
-    if (lowerMessage.includes("exam") || lowerMessage.includes("परीक्षा") || lowerMessage.includes("study")) {
-      return isHindi
-        ? "परीक्षा का तनाव सामान्य है। एक परीक्षा आपकी पूरी जिंदगी तय नहीं करती।"
-        : "Exam stress is completely normal. Remember, one exam doesn't define your entire future or worth."
-    }
-
-    // Greeting responses
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("नमस्ते")) {
-      return isHindi ? manaResponses.greeting[0] : manaResponses.greeting[1]
-    }
-
-    // Tone-based responses
-    switch (tone) {
-      case "negative":
-        if (lowerMessage.includes("anxious") || lowerMessage.includes("चिंतित")) {
-          return isHindi ? manaResponses.anxiety[0] : manaResponses.anxiety[1]
-        }
-        if (lowerMessage.includes("stress") || lowerMessage.includes("तनाव")) {
-          return isHindi ? manaResponses.stress[0] : manaResponses.stress[1]
-        }
-        return isHindi ? manaResponses.sadness[0] : manaResponses.sadness[1]
-
-      case "positive":
-        return isHindi ? manaResponses.positive[0] : manaResponses.positive[1]
-
-      default:
-        return isHindi ? manaResponses.support[0] : manaResponses.support[1]
-    }
-  }
-
   const handleSendMessage = async (messageText?: string, language?: string, isVoice = false) => {
     const text = messageText || inputMessage.trim()
     if (!text) return
@@ -230,8 +221,11 @@ export default function ChatPage() {
     setIsTyping(true)
 
     // Analyze the message and generate response
-    const tone = analyzeMessage(text)
-    const responseText = generateManaResponse(text, tone, language || currentLanguage)
+    const tone = manaAI.analyzeEmotionalTone(text)
+    const responseText = manaAI.generateContextualResponse(text, tone, language || currentLanguage)
+    
+    // Update user profile for better future responses
+    manaAI.updateUserProfile(text, tone)
 
     // Simulate typing delay
     setTimeout(() => {
@@ -253,7 +247,7 @@ export default function ChatPage() {
         utterance.lang = language || currentLanguage
         speechSynthesis.speak(utterance)
       }
-    }, 1500)
+    }, Math.random() * 1000 + 1000) // More natural response timing
   }
 
   const handleVoiceMessage = (transcript: string, language: string) => {
